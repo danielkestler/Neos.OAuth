@@ -27,12 +27,17 @@ Neos:
     # scope identifier => description, contributed by the packages that consume the tokens
     scopes: {}
 
+    # Classes implementing Neos\OAuth\Domain\ScopeProvider, for scopes a package derives, e.g. from its privileges
+    #  'Vendor.Package': 'Vendor\Package\Security\MyScopes'
+    scopeProviders: {}
+
     # The resources that accept the tokens, contributed by the packages that serve them. Each one gets a metadata
     # document (RFC 9728) at /.well-known/oauth-protected-resource/<path>
     #  'Vendor.Package':
     #    path: 'api'                 # the resource is <issuer>/<path>
     #    name: 'My API'
     #    scopes: ['my.scope']        # the scopes it accepts
+    #    scopeProvider: 'Vendor\Package\Security\MyScopes'   # or those of a scope provider instead
     #    documentation: 'api/docs'   # optional, relative to the issuer
     protectedResources: {}
 

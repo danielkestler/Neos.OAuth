@@ -20,6 +20,7 @@ class DiscoveryControllerTest extends FunctionalTestCase
         self::assertSame('http://localhost/oauth/authorize', $document['authorization_endpoint']);
         self::assertSame('http://localhost/oauth/token', $document['token_endpoint']);
         self::assertContains('neos.oauth.test', $document['scopes_supported']);
+        self::assertContains('neos.oauth.provided', $document['scopes_supported']);
         self::assertSame(['S256'], $document['code_challenge_methods_supported']);
     }
 
@@ -38,5 +39,14 @@ class DiscoveryControllerTest extends FunctionalTestCase
         ], json_decode((string)$response->getBody(), true, flags: JSON_THROW_ON_ERROR));
 
         self::assertSame(404, $this->browser->request('http://localhost/.well-known/oauth-protected-resource/unknown')->getStatusCode());
+    }
+
+    #[Test]
+    public function protectedResourcesCanTakeTheirScopesFromAScopeProvider(): void
+    {
+        $response = $this->browser->request('http://localhost/.well-known/oauth-protected-resource/provided-resource');
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame(['neos.oauth.provided'], json_decode((string)$response->getBody(), true, flags: JSON_THROW_ON_ERROR)['scopes_supported']);
     }
 }

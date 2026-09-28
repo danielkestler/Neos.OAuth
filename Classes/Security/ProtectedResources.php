@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Neos\OAuth\Security;
 
 use Neos\Flow\Annotations as Flow;
+use Neos\OAuth\Domain\ScopeProvider;
+use Neos\OAuth\Domain\ScopeRegistry;
 
 /**
  * The resources that accept the tokens, as configured in Neos.OAuth.protectedResources, and their metadata
@@ -15,18 +17,19 @@ final class ProtectedResources
     public const string METADATA_PATH = '/.well-known/oauth-protected-resource';
 
     /**
-     * @var array<string, array{path: string, name?: string, scopes?: list<string>, documentation?: string}|null>
+     * @var array<string, array{path: string, name?: string, scopes?: list<string>, scopeProvider?: class-string<ScopeProvider>, documentation?: string}|null>
      */
     #[Flow\InjectConfiguration(path: 'protectedResources', package: 'Neos.OAuth')]
     protected array $resources = [];
 
     public function __construct(
         private readonly AuthorizationServerMetadata $authorizationServer,
+        private readonly ScopeRegistry $scopeRegistry,
     ) {
     }
 
     /**
-     * @return array<string, array{path: string, name?: string, scopes?: list<string>, documentation?: string}> by key
+     * @return array<string, array{path: string, name?: string, scopes?: list<string>, scopeProvider?: class-string<ScopeProvider>, documentation?: string}> by key
      */
     public function all(): array
     {
@@ -60,7 +63,7 @@ final class ProtectedResources
             return array_filter([
                 'resource' => $issuer . '/' . trim($resource['path'], '/'),
                 'authorization_servers' => [$issuer],
-                'scopes_supported' => $resource['scopes'] ?? null,
+                'scopes_supported' => $this->scopesOf($resource),
                 'bearer_methods_supported' => ['header'],
                 'resource_name' => $resource['name'] ?? null,
                 'resource_documentation' => isset($resource['documentation']) ? $issuer . '/' . ltrim($resource['documentation'], '/') : null,
@@ -70,7 +73,21 @@ final class ProtectedResources
     }
 
     /**
-     * @return array{path: string, name?: string, scopes?: list<string>, documentation?: string}
+     * The scopes the resource accepts: those of its scopeProvider, or the listed ones
+     *
+     * @param array{path: string, name?: string, scopes?: list<string>, scopeProvider?: class-string<ScopeProvider>, documentation?: string} $resource
+     * @return list<string>|null
+     */
+    private function scopesOf(array $resource): ?array
+    {
+        if (isset($resource['scopeProvider'])) {
+            return array_keys($this->scopeRegistry->provider($resource['scopeProvider'])->scopes());
+        }
+        return $resource['scopes'] ?? null;
+    }
+
+    /**
+     * @return array{path: string, name?: string, scopes?: list<string>, scopeProvider?: class-string<ScopeProvider>, documentation?: string}
      */
     private function resource(string $key): array
     {

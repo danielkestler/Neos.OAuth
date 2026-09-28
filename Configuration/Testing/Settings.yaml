@@ -13,12 +13,17 @@ Neos:
         path: 'test-resource'
         name: 'Test resource'
         scopes: ['neos.oauth.test']
+      'Neos.OAuth:ProvidedTest':
+        path: 'provided-resource'
+        scopeProvider: 'Neos\OAuth\Tests\Functional\Fixtures\TestScopes'
     keys:
       privateKeyPath: '%FLOW_PATH_DATA%Temporary/Testing/Neos.OAuth/private.key'
       publicKeyPath: '%FLOW_PATH_DATA%Temporary/Testing/Neos.OAuth/public.key'
       encryptionKeyPath: '%FLOW_PATH_DATA%Temporary/Testing/Neos.OAuth/encryption.key'
     scopes:
       'neos.oauth.test': 'Scope of the functional tests'
+    scopeProviders:
+      'Neos.OAuth:Test': 'Neos\OAuth\Tests\Functional\Fixtures\TestScopes'
 
   Flow:
     security:

@@ -1,0 +1,73 @@
+Neos:
+  OAuth:
+    # The absolute base URI of the authorization server, e.g. https://example.com. If not set, Neos.Flow.http.baseUri
+    # or the primary domain of the default site is used. It is never taken from the request's Host header
+    issuer: null
+
+    keys:
+      # The keys are generated on first use at these paths. Data/Persistent must be shared by all servers
+      privateKeyPath: '%FLOW_PATH_DATA%Persistent/Neos.OAuth/private.key'
+      publicKeyPath: '%FLOW_PATH_DATA%Persistent/Neos.OAuth/public.key'
+      encryptionKeyPath: '%FLOW_PATH_DATA%Persistent/Neos.OAuth/encryption.key'
+      # Alternatively the keys themselves, e.g. '%env:NEOS_OAUTH_PRIVATE_KEY%' for containers. They take precedence
+      # over the files, all three have to be set
+      privateKey: null
+      publicKey: null
+      encryptionKey: null
+
+    # ISO 8601 durations
+    ttl:
+      accessToken: 'PT1H'
+      refreshToken: 'P30D'
+      authCode: 'PT10M'
+
+    # The Flow authentication provider whose accounts tokens are issued for
+    accountAuthenticationProviderName: 'Neos.Neos:Backend'
+
+    # scope identifier => description, contributed by the packages that consume the tokens
+    scopes: {}
+
+    # The resources that accept the tokens, contributed by the packages that serve them. Each one gets a metadata
+    # document (RFC 9728) at /.well-known/oauth-protected-resource/<path>
+    #  'Vendor.Package':
+    #    path: 'api'                 # the resource is <issuer>/<path>
+    #    name: 'My API'
+    #    scopes: ['my.scope']        # the scopes it accepts
+    #    documentation: 'api/docs'   # optional, relative to the issuer
+    protectedResources: {}
+
+    # Public clients declared by packages, e.g. for their docs: no registration needed. "{issuer}" in redirect URIs is
+    # replaced per environment. Confidential clients are registered with ./flow oauth:createclient
+    #  'my-app':
+    #    name: 'My app'
+    #    redirectUris: ['{issuer}/my-app/callback']
+    #    grantTypes: ['authorization_code', 'refresh_token']   # the default
+    #    scopes: ['my.scope']                                  # defaults to all registered scopes
+    #    firstParty: false                                     # true skips the consent page
+    clients: {}
+
+  Flow:
+    mvc:
+      routes:
+        'Neos.OAuth':
+          position: 'before Neos.Neos'
+
+    security:
+      authentication:
+        providers:
+          # Authenticates "Authorization: Bearer <access token>" requests. It has no request patterns of its own:
+          # every package that accepts the tokens adds one for its URLs. Use the "Uri" pattern type: Flow requires
+          # a match of every pattern type, so a pattern of another type would disable the token for all the others
+          'Neos.OAuth:Bearer':
+            label: 'OAuth 2 Bearer'
+            provider: 'Neos\OAuth\Security\OAuthBearerProvider'
+            token: 'Neos\OAuth\Security\OAuthBearerToken'
+            requestPatterns: {}
+
+          # The authorize endpoint issues codes for the logged in backend user
+          'Neos.Neos:Backend':
+            requestPatterns:
+              'Neos.OAuth:Authorize':
+                pattern: 'ControllerObjectName'
+                patternOptions:
+                  controllerObjectNamePattern: 'Neos\OAuth\Controller\AuthorizeController'

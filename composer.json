@@ -1,0 +1,23 @@
+{
+    "name": "neos/oauth",
+    "type": "neos-package",
+    "description": "OAuth 2 authorization server and bearer token authentication for Neos, based on league/oauth2-server",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "neos/flow": "^9.0",
+        "neos/neos": "^9.0",
+        "league/oauth2-server": "^8.5",
+        "guzzlehttp/psr7": "^2.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Neos\\OAuth\\": "Classes/"
+        }
+    },
+    "extra": {
+        "neos": {
+            "package-key": "Neos.OAuth"
+        }
+    }
+}

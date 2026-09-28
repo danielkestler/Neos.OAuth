@@ -1,0 +1,32 @@
+Neos:
+  OAuth:
+    issuer: 'http://localhost'
+    clients:
+      'declared-spa':
+        name: 'Declared SPA'
+        redirectUris: ['{issuer}/callback']
+        firstParty: true
+      'invalid-declared':
+        grantTypes: ['client_credentials']
+    protectedResources:
+      'Neos.OAuth:Test':
+        path: 'test-resource'
+        name: 'Test resource'
+        scopes: ['neos.oauth.test']
+    keys:
+      privateKeyPath: '%FLOW_PATH_DATA%Temporary/Testing/Neos.OAuth/private.key'
+      publicKeyPath: '%FLOW_PATH_DATA%Temporary/Testing/Neos.OAuth/public.key'
+      encryptionKeyPath: '%FLOW_PATH_DATA%Temporary/Testing/Neos.OAuth/encryption.key'
+    scopes:
+      'neos.oauth.test': 'Scope of the functional tests'
+
+  Flow:
+    security:
+      authentication:
+        providers:
+          'Neos.OAuth:Bearer':
+            requestPatterns:
+              'Neos.OAuth:TestFixtures':
+                pattern: 'Uri'
+                patternOptions:
+                  uriPattern: '/test/neos-oauth/.*'

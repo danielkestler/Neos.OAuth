@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>Authorize application</title>
+    <style>
+        :root { color-scheme: light dark; --bg: #f4f4f5; --card: #fff; --text: #18181b; --muted: #52525b; --border: #e4e4e7; --accent: #00adee; }
+        @media (prefers-color-scheme: dark) { :root { --bg: #18181b; --card: #27272a; --text: #fafafa; --muted: #a1a1aa; --border: #3f3f46; } }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+        main { width: min(420px, calc(100vw - 32px)); padding: 32px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
+        h1 { margin: 0 0 8px; font-size: 1.25rem; }
+        p { margin: 0 0 16px; color: var(--muted); }
+        ul { margin: 0 0 24px; padding: 0; list-style: none; border-top: 1px solid var(--border); }
+        li { padding: 12px 0; border-bottom: 1px solid var(--border); }
+        code { font-size: .8125rem; color: var(--muted); }
+        .actions { display: flex; gap: 12px; }
+        button { flex: 1; padding: 10px 16px; font: inherit; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text); }
+        button[value="approve"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+    </style>
+</head>
+<body>
+<main>
+    <f:if condition="{error}">
+        <f:then>
+            <h1>Authorization failed</h1>
+            <p>{error}</p>
+            <f:if condition="{hint}"><p><code>{hint}</code></p></f:if>
+        </f:then>
+        <f:else>
+            <h1>Authorize {clientName}</h1>
+            <p><strong>{clientName}</strong> wants to access Neos as <strong>{accountIdentifier}</strong>.</p>
+            <f:if condition="{scopes}">
+                <ul>
+                    <f:for each="{scopes}" as="scope">
+                        <li>{scope.description}<br><code>{scope.identifier}</code></li>
+                    </f:for>
+                </ul>
+            </f:if>
+            <f:form action="decide" method="post">
+                <f:form.hidden name="authorizationQuery" value="{authorizationQuery}" />
+                <div class="actions">
+                    <button type="submit" name="decision" value="deny">Deny</button>
+                    <button type="submit" name="decision" value="approve">Approve</button>
+                </div>
+            </f:form>
+        </f:else>
+    </f:if>
+</main>
+</body>
+</html>

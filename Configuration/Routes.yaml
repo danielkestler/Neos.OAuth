@@ -1,0 +1,51 @@
+-
+  name: 'Authorization endpoint'
+  uriPattern: 'oauth/authorize'
+  defaults:
+    '@package': 'Neos.OAuth'
+    '@controller': 'Authorize'
+    '@action': 'authorize'
+    '@format': 'html'
+  httpMethods: ['GET']
+  # keeps the authorization request's query parameters when the login redirects back
+  appendExceedingArguments: true
+
+-
+  name: 'Authorization endpoint: decision'
+  uriPattern: 'oauth/authorize'
+  defaults:
+    '@package': 'Neos.OAuth'
+    '@controller': 'Authorize'
+    '@action': 'decide'
+    '@format': 'html'
+  httpMethods: ['POST']
+
+-
+  name: 'Token endpoint'
+  uriPattern: 'oauth/token'
+  defaults:
+    '@package': 'Neos.OAuth'
+    '@controller': 'Token'
+    '@action': 'token'
+    '@format': 'json'
+  httpMethods: ['POST']
+
+-
+  name: 'Authorization server metadata (RFC 8414)'
+  uriPattern: '.well-known/oauth-authorization-server'
+  defaults:
+    '@package': 'Neos.OAuth'
+    '@controller': 'Discovery'
+    '@action': 'authorizationServer'
+    '@format': 'json'
+  httpMethods: ['GET']
+
+-
+  name: 'Protected resource metadata (RFC 9728)'
+  uriPattern: '.well-known/oauth-protected-resource/{resourcePath}'
+  defaults:
+    '@package': 'Neos.OAuth'
+    '@controller': 'Discovery'
+    '@action': 'protectedResource'
+    '@format': 'json'
+  httpMethods: ['GET']

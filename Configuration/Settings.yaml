@@ -51,6 +51,12 @@ Neos:
     #    firstParty: false                                     # true skips the consent page
     clients: {}
 
+    # Dynamic client registration (RFC 7591) at /oauth/register, e.g. for MCP clients. Only public clients (PKCE, no
+    # secret) can register, and they get no permissions of their own: every token acts as the user who approved it.
+    # The endpoint is anonymous and unlimited, so it is disabled by default (the Development context enables it)
+    dynamicClientRegistration:
+      enabled: false
+
   Flow:
     mvc:
       routes:

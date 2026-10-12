@@ -31,6 +31,16 @@
   httpMethods: ['POST']
 
 -
+  name: 'Dynamic client registration (RFC 7591)'
+  uriPattern: 'oauth/register'
+  defaults:
+    '@package': 'Neos.OAuth'
+    '@controller': 'Registration'
+    '@action': 'register'
+    '@format': 'json'
+  httpMethods: ['POST']
+
+-
   name: 'Authorization server metadata (RFC 8414)'
   uriPattern: '.well-known/oauth-authorization-server'
   defaults:

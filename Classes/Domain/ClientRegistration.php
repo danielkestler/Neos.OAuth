@@ -15,6 +15,11 @@ use Neos\OAuth\Domain\Repository\OAuthClientRepository;
 #[Flow\Scope('singleton')]
 final class ClientRegistration
 {
+    /**
+     * Code of the exception for a redirect URI that is not acceptable
+     */
+    public const int INVALID_REDIRECT_URI = 1790100044;
+
     #[Flow\InjectConfiguration(path: 'accountAuthenticationProviderName', package: 'Neos.OAuth')]
     protected string $accountAuthenticationProviderName;
 
@@ -52,7 +57,7 @@ final class ClientRegistration
         foreach ($redirectUris as $redirectUri) {
             self::assertAcceptableRedirectUri($redirectUri);
         }
-        $knownScopes = $this->scopeRegistry->identifiers();
+        $knownScopes = $this->defaultScopes();
         $scopes ??= $knownScopes;
         $unknownScopes = array_diff($scopes, $knownScopes);
         if ($unknownScopes !== []) {
@@ -78,6 +83,16 @@ final class ClientRegistration
     }
 
     /**
+     * The scopes of clients registered without any: all registered scopes
+     *
+     * @return list<string>
+     */
+    public function defaultScopes(): array
+    {
+        return $this->scopeRegistry->identifiers();
+    }
+
+    /**
      * https, http on a loopback address, or the custom scheme of a native app, without a fragment (RFC 6749 3.1.2)
      *
      * @throws \InvalidArgumentException
@@ -92,7 +107,7 @@ final class ClientRegistration
             default => true,
         };
         if (!$acceptable) {
-            throw new \InvalidArgumentException(sprintf('Invalid redirect URI "%s": use https, http on a loopback address, or a custom scheme of a native app', $uri), 1790100044);
+            throw new \InvalidArgumentException(sprintf('Invalid redirect URI "%s": use https, http on a loopback address, or a custom scheme of a native app', $uri), self::INVALID_REDIRECT_URI);
         }
     }
 }

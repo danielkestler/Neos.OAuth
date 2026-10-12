@@ -22,10 +22,15 @@ final class AuthorizationServerMetadata
 
     public const string AUTHORIZATION_PATH = '/oauth/authorize';
 
+    public const string REGISTRATION_PATH = '/oauth/register';
+
     public const string DISCOVERY_PATH = '/.well-known/oauth-authorization-server';
 
     #[Flow\InjectConfiguration(path: 'issuer', package: 'Neos.OAuth')]
     protected ?string $issuer = null;
+
+    #[Flow\InjectConfiguration(path: 'dynamicClientRegistration.enabled', package: 'Neos.OAuth')]
+    protected bool $dynamicClientRegistration = false;
 
     #[Flow\InjectConfiguration(path: 'http.baseUri', package: 'Neos.Flow')]
     protected ?string $baseUri = null;
@@ -48,6 +53,14 @@ final class AuthorizationServerMetadata
     public function authorizationUrl(): string
     {
         return self::AUTHORIZATION_PATH;
+    }
+
+    /**
+     * The dynamic client registration endpoint (RFC 7591), null if it is disabled
+     */
+    public function registrationUrl(): ?string
+    {
+        return $this->dynamicClientRegistration ? self::REGISTRATION_PATH : null;
     }
 
     /**
@@ -117,6 +130,7 @@ final class AuthorizationServerMetadata
     public function document(): array
     {
         $issuer = $this->issuer();
+        $registrationUrl = $this->registrationUrl();
         return [
             'issuer' => $issuer,
             'authorization_endpoint' => $issuer . self::AUTHORIZATION_PATH,
@@ -127,6 +141,6 @@ final class AuthorizationServerMetadata
             'grant_types_supported' => OAuthClient::SUPPORTED_GRANTS,
             'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post', 'none'],
             'code_challenge_methods_supported' => $this->codeChallengeMethods(),
-        ];
+        ] + ($registrationUrl !== null ? ['registration_endpoint' => $issuer . $registrationUrl] : []);
     }
 }

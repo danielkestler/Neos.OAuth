@@ -20,6 +20,7 @@ class AuthorizationServerMetadataTest extends FunctionalTestCase
 
         self::assertSame($metadata->tokenUrl(), $this->resolve('Token', 'token', 'json'));
         self::assertSame($metadata->authorizationUrl(), $this->resolve('Authorize', 'authorize', 'html'));
+        self::assertSame($metadata::REGISTRATION_PATH, $this->resolve('Registration', 'register', 'json'));
     }
 
     private function resolve(string $controller, string $action, string $format): string

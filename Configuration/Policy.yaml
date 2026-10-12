@@ -2,6 +2,8 @@ privilegeTargets:
   'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
     'Neos.OAuth:TokenEndpoint':
       matcher: 'method(Neos\OAuth\Controller\TokenController->tokenAction())'
+    'Neos.OAuth:RegistrationEndpoint':
+      matcher: 'method(Neos\OAuth\Controller\RegistrationController->registerAction())'
     'Neos.OAuth:Discovery':
       matcher: 'method(Neos\OAuth\Controller\DiscoveryController->(authorizationServer|protectedResource)Action())'
     # Login is enforced by the controller, so it can send the browser to the login form
@@ -14,6 +16,8 @@ roles:
       - privilegeTarget: 'Neos.OAuth:TokenEndpoint'
         permission: GRANT
       - privilegeTarget: 'Neos.OAuth:AuthorizationEndpoint'
+        permission: GRANT
+      - privilegeTarget: 'Neos.OAuth:RegistrationEndpoint'
         permission: GRANT
       - privilegeTarget: 'Neos.OAuth:Discovery'
         permission: GRANT

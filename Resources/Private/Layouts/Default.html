@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>Authorize application</title>
+    <f:for each="{loginForm.stylesheets}" as="stylesheet">
+        <link rel="stylesheet" href="{f:uri.resource(path: stylesheet)}">
+    </f:for>
+    <f:if condition="{loginForm.backgroundImage}">
+        <style>body.neos--bg, .neos-login-box:before { background-image: url({f:uri.resource(path: loginForm.backgroundImage)}); }</style>
+    </f:if>
+    <style>
+        .neos-login-body { color: #fff; font-size: 14px; line-height: 1.5; }
+        .neos-login-body p { margin: 0 0 16px; }
+        .neos-login-body ul { margin: 0 0 24px; padding: 0; list-style: none; border-top: 1px solid rgba(255, 255, 255, .25); }
+        .neos-login-body li { padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .25); }
+        .neos-login-body code { font-size: 12px; opacity: .75; }
+        .neos-login-box .neos-actions { display: flex; gap: 16px; }
+        .neos-login-box .neos-actions button { flex: 1; cursor: pointer; background-color: #3f3f3f; }
+    </style>
+</head>
+<body class="neos{f:if(condition: loginForm.backgroundImage, then: ' neos--bg')}">
+<div class="neos-modal-centered">
+    <main class="neos-login-main">
+        <div class="neos-login-box{f:if(condition: loginForm.backgroundImage, then: ' background-image-active')}">
+            <f:if condition="{loginForm.logoImage}">
+                <figure class="neos-login-box-logo">
+                    <img class="neos-login-box-logo-resource" src="{f:uri.resource(path: loginForm.logoImage)}" width="200" height="200" alt="Neos Logo">
+                </figure>
+            </f:if>
+            <f:render section="Content" />
+        </div>
+    </main>
+    <f:if condition="{loginForm.backgroundImageAttribution}">
+        <footer class="neos-login-footer"><p>{loginForm.backgroundImageAttribution}</p></footer>
+    </f:if>
+</div>
+</body>
+</html>

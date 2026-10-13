@@ -10,6 +10,7 @@ use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Mvc\Controller\ActionController;
+use Neos\Flow\Mvc\View\ViewInterface;
 use Neos\Flow\Security\Account;
 use Neos\Flow\Security\Authentication\AuthenticationManagerInterface;
 use Neos\Flow\Security\Context as SecurityContext;
@@ -30,8 +31,6 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 class AuthorizeController extends ActionController
 {
-    private const string TEMPLATE = 'resource://Neos.OAuth/Private/Templates/Authorize/Page.html';
-
     #[Flow\Inject]
     protected ServerFactory $serverFactory;
 
@@ -47,7 +46,28 @@ class AuthorizeController extends ActionController
     #[Flow\InjectConfiguration(path: 'accountAuthenticationProviderName', package: 'Neos.OAuth')]
     protected string $accountAuthenticationProviderName;
 
-    public function authorizeAction(): ResponseInterface
+    /**
+     * The consent page looks like the backend login the user just came from
+     *
+     * @var array<string, mixed>
+     */
+    #[Flow\InjectConfiguration(path: 'userInterface.backendLoginForm', package: 'Neos.Neos')]
+    protected array $loginFormSettings;
+
+    protected function initializeAction(): void
+    {
+        // The consent page must neither be cached nor framed (clickjacking)
+        $this->response->setHttpHeader('Cache-Control', 'no-store');
+        $this->response->setHttpHeader('X-Frame-Options', 'DENY');
+        $this->response->setHttpHeader('Content-Security-Policy', "frame-ancestors 'none'");
+    }
+
+    protected function initializeView(ViewInterface $view): void
+    {
+        $view->assign('loginForm', $this->loginFormSettings);
+    }
+
+    public function authorizeAction(): ?ResponseInterface
     {
         $account = $this->authenticatedAccount();
         if ($account === null) {
@@ -66,23 +86,26 @@ class AuthorizeController extends ActionController
             return $this->errorResponse($exception);
         }
 
-        return $this->renderPage(200, [
+        $this->view->assignMultiple([
             'clientName' => $client->getName(),
             'scopes' => $this->describe($authorizationRequest),
             'accountIdentifier' => $account->getAccountIdentifier(),
             'authorizationQuery' => $httpRequest->getUri()->getQuery(),
         ]);
+        return null;
     }
 
     /**
      * @param string $authorizationQuery the query string of the authorization request the user decided on
      * @param string $decision "approve" or anything else to deny
      */
-    public function decideAction(string $authorizationQuery, string $decision): ResponseInterface
+    public function decideAction(string $authorizationQuery, string $decision): ?ResponseInterface
     {
         $account = $this->authenticatedAccount();
         if ($account === null) {
-            return $this->renderPage(401, ['error' => 'Your session has expired. Please start the authorization again.']);
+            $this->response->setStatusCode(401);
+            $this->view->assign('error', 'Your session has expired. Please start the authorization again.');
+            return null;
         }
         parse_str($authorizationQuery, $queryParameters);
         try {
@@ -149,31 +172,21 @@ class AuthorizeController extends ActionController
         return $scopes;
     }
 
-    private function errorResponse(OAuthServerException $exception): ResponseInterface
+    /**
+     * Returns the redirect to the client, or null to render the action's template with the error
+     */
+    private function errorResponse(OAuthServerException $exception): ?ResponseInterface
     {
         if ($exception->hasRedirect()) {
             return LeagueResponse::rewound($exception->generateHttpResponse(new Response()));
         }
         // Without a verified redirect URI, the error must not be sent anywhere
         $this->logger->info(sprintf('Rejected OAuth authorization request: %s', $exception->getHint() ?? $exception->getMessage()), LogEnvironment::fromMethodName(__METHOD__));
-        return $this->renderPage($exception->getHttpStatusCode(), [
+        $this->response->setStatusCode($exception->getHttpStatusCode());
+        $this->view->assignMultiple([
             'error' => $exception->getMessage(),
             'hint' => $exception->getHint(),
         ]);
-    }
-
-    /**
-     * @param array<string, mixed> $variables
-     */
-    private function renderPage(int $statusCode, array $variables): ResponseInterface
-    {
-        $this->view->setTemplatePathAndFilename(self::TEMPLATE);
-        $this->view->assignMultiple($variables);
-        return new Response($statusCode, [
-            'Content-Type' => 'text/html; charset=UTF-8',
-            'Cache-Control' => 'no-store',
-            'X-Frame-Options' => 'DENY',
-            'Content-Security-Policy' => "frame-ancestors 'none'",
-        ], (string)$this->view->render());
+        return null;
     }
 }

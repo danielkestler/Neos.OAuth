@@ -1,0 +1,29 @@
+<f:layout name="Default" />
+
+<f:section name="Content">
+    <f:if condition="{error}">
+        <f:then>
+            <f:render partial="Error" arguments="{error: error, hint: hint}" />
+        </f:then>
+        <f:else>
+            <h1 class="neos-login-heading">Authorize <strong>{clientName}</strong></h1>
+            <div class="neos-login-body neos">
+                <p><strong>{clientName}</strong> wants to access Neos as <strong>{accountIdentifier}</strong>.</p>
+                <f:if condition="{scopes}">
+                    <ul>
+                        <f:for each="{scopes}" as="scope">
+                            <li>{scope.description}<br><code>{scope.identifier}</code></li>
+                        </f:for>
+                    </ul>
+                </f:if>
+                <f:form action="decide" method="post">
+                    <f:form.hidden name="authorizationQuery" value="{authorizationQuery}" />
+                    <div class="neos-actions">
+                        <button type="submit" name="decision" value="deny" class="neos-button">Deny</button>
+                        <button type="submit" name="decision" value="approve" class="neos-button neos-login-btn">Approve</button>
+                    </div>
+                </f:form>
+            </div>
+        </f:else>
+    </f:if>
+</f:section>

@@ -16,11 +16,14 @@ final readonly class AuthenticatedGrant
 {
     /**
      * @param list<string> $scopes
+     * @param string|null $accessTokenIdentifier the identifier of the access token's TokenRecord (TokenRecordRepository),
+     *                                           e.g. to revoke the account's other tokens but this one
      */
     public function __construct(
         public Account $account,
         public string $clientIdentifier,
         public array $scopes,
+        public ?string $accessTokenIdentifier = null,
     ) {
     }
 

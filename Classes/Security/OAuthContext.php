@@ -36,7 +36,7 @@ final class OAuthContext
         foreach ($this->securityContext->getAuthenticationTokensOfType(OAuthBearerToken::class) as $token) {
             $account = $token->getAccount();
             if ($token->getAuthenticationProviderName() === self::PROVIDER_NAME && $token->isAuthenticated() && $account !== null) {
-                return new AuthenticatedGrant($account, (string)$token->getClientIdentifier(), $token->getScopes());
+                return new AuthenticatedGrant($account, (string)$token->getClientIdentifier(), $token->getScopes(), $token->getAccessTokenIdentifier());
             }
         }
         return null;

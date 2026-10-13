@@ -20,14 +20,18 @@ class OAuthBearerToken extends BearerToken
 
     protected ?string $clientIdentifier = null;
 
+    protected ?string $accessTokenIdentifier = null;
+
     /**
      * @param list<string> $scopes
+     * @param string|null $accessTokenIdentifier the identifier of the access token's TokenRecord
      * @internal set by the OAuthBearerProvider
      */
-    public function setGrant(string $clientIdentifier, array $scopes): void
+    public function setGrant(string $clientIdentifier, array $scopes, ?string $accessTokenIdentifier = null): void
     {
         $this->clientIdentifier = $clientIdentifier;
         $this->scopes = array_values($scopes);
+        $this->accessTokenIdentifier = $accessTokenIdentifier;
     }
 
     /**
@@ -46,6 +50,14 @@ class OAuthBearerToken extends BearerToken
     public function getClientIdentifier(): ?string
     {
         return $this->clientIdentifier;
+    }
+
+    /**
+     * The identifier of the access token's TokenRecord, e.g. to revoke the account's other tokens but this one
+     */
+    public function getAccessTokenIdentifier(): ?string
+    {
+        return $this->accessTokenIdentifier;
     }
 
     public function __toString(): string

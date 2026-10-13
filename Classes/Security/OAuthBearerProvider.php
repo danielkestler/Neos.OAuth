@@ -85,7 +85,12 @@ class OAuthBearerProvider extends AbstractProvider
             return;
         }
 
-        $authenticationToken->setGrant($clientIdentifier, array_values(array_map('strval', (array)$validatedRequest->getAttribute('oauth_scopes', []))));
+        $accessTokenIdentifier = (string)$validatedRequest->getAttribute('oauth_access_token_id');
+        $authenticationToken->setGrant(
+            $clientIdentifier,
+            array_values(array_map('strval', (array)$validatedRequest->getAttribute('oauth_scopes', []))),
+            $accessTokenIdentifier !== '' ? $accessTokenIdentifier : null,
+        );
         $authenticationToken->setAccount($account);
         $authenticationToken->setAuthenticationStatus(TokenInterface::AUTHENTICATION_SUCCESSFUL);
     }

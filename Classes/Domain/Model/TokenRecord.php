@@ -34,18 +34,31 @@ class TokenRecord
 
     protected bool $revoked = false;
 
+    /**
+     * The URIs of the protected resources the token was issued for (RFC 8707), null if it isn't bound to any
+     *
+     * @var array|null
+     */
+    #[ORM\Column(type: 'json', nullable: true)]
+    protected ?array $audience = null;
+
+    /**
+     * @param list<string> $audience
+     */
     public function __construct(
         string $identifier,
         TokenType $type,
         string $clientIdentifier,
         ?string $accountIdentifier,
         \DateTimeImmutable $expiresAt,
+        array $audience = [],
     ) {
         $this->identifier = $identifier;
         $this->type = $type->value;
         $this->clientIdentifier = $clientIdentifier;
         $this->accountIdentifier = $accountIdentifier;
         $this->expiresAt = $expiresAt;
+        $this->audience = $audience !== [] ? array_values($audience) : null;
     }
 
     public function getIdentifier(): string
@@ -71,6 +84,14 @@ class TokenRecord
     public function getExpiresAt(): \DateTimeImmutable
     {
         return $this->expiresAt;
+    }
+
+    /**
+     * @return list<string> the URIs of the protected resources the token was issued for, empty if it isn't bound
+     */
+    public function getAudience(): array
+    {
+        return $this->audience ?? [];
     }
 
     public function isRevoked(): bool

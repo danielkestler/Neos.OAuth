@@ -20,14 +20,19 @@ use Neos\OAuth\Domain\ScopeRegistry;
 use Neos\OAuth\Infrastructure\League\Entity\ClientEntity;
 use Neos\OAuth\Infrastructure\League\Entity\UserEntity;
 use Neos\OAuth\Infrastructure\League\LeagueResponse;
+use Neos\OAuth\Infrastructure\League\Repository\TokenRecords;
 use Neos\OAuth\Infrastructure\League\ServerFactory;
+use Neos\OAuth\Security\InvalidTarget;
+use Neos\OAuth\Security\IssuerNotConfigured;
+use Neos\OAuth\Security\ProtectedResources;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * The authorization endpoint (RFC 6749 section 3.1) of the authorization code grant
  *
- * The logged in backend user is asked to approve the client's request. PKCE with S256 is required from every client
+ * The logged in backend user is asked to approve the client's request. PKCE with S256 is required from every client.
+ * The code is bound to the resources the client names in "resource" parameters (RFC 8707), see TokenController
  */
 class AuthorizeController extends ActionController
 {
@@ -36,6 +41,12 @@ class AuthorizeController extends ActionController
 
     #[Flow\Inject]
     protected ScopeRegistry $scopeRegistry;
+
+    #[Flow\Inject]
+    protected ProtectedResources $protectedResources;
+
+    #[Flow\Inject]
+    protected TokenRecords $tokenRecords;
 
     #[Flow\Inject]
     protected AuthenticationManagerInterface $authenticationManager;
@@ -77,10 +88,10 @@ class AuthorizeController extends ActionController
 
         $httpRequest = $this->request->getHttpRequest();
         try {
-            $authorizationRequest = $this->validate($httpRequest);
+            [$authorizationRequest, $audience] = $this->validate($httpRequest);
             $client = $authorizationRequest->getClient();
             if ($client instanceof ClientEntity && $client->firstParty) {
-                return $this->complete($authorizationRequest, $account, true);
+                return $this->complete($authorizationRequest, $audience, $account, true);
             }
         } catch (OAuthServerException $exception) {
             return $this->errorResponse($exception);
@@ -114,7 +125,7 @@ class AuthorizeController extends ActionController
         parse_str($authorizationQuery, $queryParameters);
         try {
             // Validated again, the form's values cannot be trusted
-            $authorizationRequest = $this->validate(
+            [$authorizationRequest, $audience] = $this->validate(
                 (new ServerRequest('GET', '/oauth/authorize?' . $authorizationQuery))->withQueryParams($queryParameters)
             );
             // The user may grant fewer scopes than requested, but never others
@@ -130,13 +141,16 @@ class AuthorizeController extends ActionController
                 return null;
             }
             $authorizationRequest->setScopes($grantedScopes);
-            return $this->complete($authorizationRequest, $account, $decision === 'approve');
+            return $this->complete($authorizationRequest, $audience, $account, $decision === 'approve');
         } catch (OAuthServerException $exception) {
             return $this->errorResponse($exception);
         }
     }
 
-    private function validate(ServerRequestInterface $request): AuthorizationRequest
+    /**
+     * @return array{AuthorizationRequest, list<string>} the request, and the URIs of the resources it asks for
+     */
+    private function validate(ServerRequestInterface $request): array
     {
         $authorizationServer = $this->serverFactory->getAuthorizationServer();
         $authorizationRequest = $authorizationServer->validateAuthorizationRequest($request);
@@ -155,14 +169,25 @@ class AuthorizeController extends ActionController
         if ($authorizationRequest->getCodeChallenge() === null || $authorizationRequest->getCodeChallengeMethod() !== 'S256') {
             throw new OAuthServerException('The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.', 3, 'invalid_request', 400, 'PKCE with code_challenge_method "S256" is required', $redirectUri);
         }
-        return $authorizationRequest;
+        try {
+            // from the raw query, since the parsed one keeps only the last of repeated parameters
+            $audience = $this->protectedResources->audienceFor(ProtectedResources::indicatorsIn($request->getUri()->getQuery()));
+        } catch (InvalidTarget | IssuerNotConfigured $exception) {
+            throw new OAuthServerException('The requested resource is invalid, unknown, or not covered by the grant.', 0, 'invalid_target', 400, $exception->getMessage(), $redirectUri);
+        }
+        return [$authorizationRequest, $audience];
     }
 
-    private function complete(AuthorizationRequest $authorizationRequest, Account $account, bool $approved): ResponseInterface
+    /**
+     * @param list<string> $audience the URIs of the resources the code is bound to
+     */
+    private function complete(AuthorizationRequest $authorizationRequest, array $audience, Account $account, bool $approved): ResponseInterface
     {
         $authorizationRequest->setUser(new UserEntity($account->getAccountIdentifier()));
         $authorizationRequest->setAuthorizationApproved($approved);
-        return LeagueResponse::rewound($this->serverFactory->getAuthorizationServer()->completeAuthorizationRequest($authorizationRequest, new Response()));
+        return $this->tokenRecords->withAudience($audience, fn () => LeagueResponse::rewound(
+            $this->serverFactory->getAuthorizationServer()->completeAuthorizationRequest($authorizationRequest, new Response())
+        ));
     }
 
     private function authenticatedAccount(): ?Account

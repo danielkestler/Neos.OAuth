@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Neos\OAuth\Security;
 
+use Neos\Flow\Http\Helper\RequestInformationHelper;
+use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Security\Authentication\Token\BearerToken;
 
 /**
@@ -21,6 +23,25 @@ class OAuthBearerToken extends BearerToken
     protected ?string $clientIdentifier = null;
 
     protected ?string $accessTokenIdentifier = null;
+
+    /**
+     * The path of the request relative to the base URI, which tells the protected resource the token is sent to
+     */
+    protected string $requestPath = '';
+
+    public function updateCredentials(ActionRequest $actionRequest)
+    {
+        parent::updateCredentials($actionRequest);
+        $this->requestPath = (string)strtok(RequestInformationHelper::getRelativeRequestPath($actionRequest->getHttpRequest()), '?');
+    }
+
+    /**
+     * @internal for the OAuthBearerProvider
+     */
+    public function getRequestPath(): string
+    {
+        return $this->requestPath;
+    }
 
     /**
      * @param list<string> $scopes

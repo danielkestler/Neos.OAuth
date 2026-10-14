@@ -40,13 +40,15 @@ Neos:
     scopeGroups: {}
 
     # The resources that accept the tokens, contributed by the packages that serve them. Each one gets a metadata
-    # document (RFC 9728) at /.well-known/oauth-protected-resource/<path>
+    # document (RFC 9728) at /.well-known/oauth-protected-resource/<path>. A client can bind a token to resources by
+    # naming their URIs (<issuer>/<path>) in "resource" parameters (RFC 8707), the token is then only accepted by those
     #  'Vendor.Package':
     #    path: 'api'                 # the resource is <issuer>/<path>
     #    name: 'My API'
     #    scopes: ['my.scope']        # the scopes it accepts
     #    scopeProvider: 'Vendor\Package\Security\MyScopes'   # or those of a scope provider instead
     #    documentation: 'api/docs'   # optional, relative to the issuer
+    #    requireAudience: true       # optional, only accepts tokens bound to this resource, e.g. for MCP servers
     protectedResources: {}
 
     # Public clients declared by packages, e.g. for their docs: no registration needed. "{issuer}" in redirect URIs is

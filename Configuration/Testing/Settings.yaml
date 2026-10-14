@@ -16,6 +16,14 @@ Neos:
       'Neos.OAuth:ProvidedTest':
         path: 'provided-resource'
         scopeProvider: 'Neos\OAuth\Tests\Functional\Fixtures\TestScopes'
+      # the Whoami fixture, see ResourceIndicatorsTest
+      'Neos.OAuth:Whoami':
+        path: 'test/neos-oauth'
+        scopes: ['neos.oauth.test']
+      'Neos.OAuth:StrictWhoami':
+        path: 'test/neos-oauth-strict'
+        scopes: ['neos.oauth.test']
+        requireAudience: true
     keys:
       privateKeyPath: '%FLOW_PATH_DATA%Temporary/Testing/Neos.OAuth/private.key'
       publicKeyPath: '%FLOW_PATH_DATA%Temporary/Testing/Neos.OAuth/public.key'
@@ -34,4 +42,4 @@ Neos:
               'Neos.OAuth:TestFixtures':
                 pattern: 'Uri'
                 patternOptions:
-                  uriPattern: '/test/neos-oauth/.*'
+                  uriPattern: '/test/neos-oauth(-strict)?/.*'

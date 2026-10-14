@@ -12,6 +12,8 @@ use Neos\Flow\Security\Authentication\Provider\AbstractProvider;
 use Neos\Flow\Security\Authentication\TokenInterface;
 use Neos\Flow\Security\Exception\UnsupportedAuthenticationTokenException;
 use Neos\OAuth\Domain\ClientDirectory;
+use Neos\OAuth\Domain\Model\TokenType;
+use Neos\OAuth\Infrastructure\League\Repository\TokenRecords;
 use Neos\OAuth\Infrastructure\League\ServerFactory;
 use Psr\Log\LoggerInterface;
 
@@ -31,6 +33,12 @@ class OAuthBearerProvider extends AbstractProvider
 
     #[Flow\Inject]
     protected AccountRepository $accountRepository;
+
+    #[Flow\Inject]
+    protected TokenRecords $tokenRecords;
+
+    #[Flow\Inject]
+    protected ProtectedResources $protectedResources;
 
     #[Flow\Inject]
     protected LoggerInterface $logger;
@@ -86,6 +94,14 @@ class OAuthBearerProvider extends AbstractProvider
         }
 
         $accessTokenIdentifier = (string)$validatedRequest->getAttribute('oauth_access_token_id');
+        // A token bound to resources (RFC 8707) is only good for those
+        $audience = $this->tokenRecords->audienceOf($accessTokenIdentifier, TokenType::ACCESS_TOKEN);
+        if (!$this->protectedResources->accepts($authenticationToken->getRequestPath(), $audience)) {
+            $this->logger->info(sprintf('Rejected OAuth access token of client "%s" for "%s": it was issued for %s', $clientIdentifier, $authenticationToken->getRequestPath(), $audience !== [] ? implode(', ', $audience) : 'no resource in particular'), LogEnvironment::fromMethodName(__METHOD__));
+            $authenticationToken->setAuthenticationStatus(TokenInterface::WRONG_CREDENTIALS);
+            return;
+        }
+
         $authenticationToken->setGrant(
             $clientIdentifier,
             array_values(array_map('strval', (array)$validatedRequest->getAttribute('oauth_scopes', []))),

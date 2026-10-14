@@ -8,12 +8,23 @@
     <f:else>
       <h1 class="neos-login-heading">
         Authorize <strong>{clientName}</strong>
+        <f:if condition="{clientHost}">({clientHost})</f:if>
       </h1>
       <div class="neos-login-body neos">
         <p>
           <strong>{clientName}</strong> wants to access Neos as
           <strong>{accountIdentifier}</strong>.
         </p>
+        <f:if condition="{clientHost}">
+          <p>
+            The name is not verified: this client describes itself on
+            <strong>{clientHost}</strong>. Only approve if you trust that site.
+            <f:if condition="{redirectHost}">
+              After your decision you are sent to
+              <strong>{redirectHost}</strong>.
+            </f:if>
+          </p>
+        </f:if>
         <f:form action="decide" method="post">
           <f:form.hidden
             name="authorizationQuery"

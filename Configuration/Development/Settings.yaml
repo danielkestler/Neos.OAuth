@@ -2,3 +2,5 @@ Neos:
   OAuth:
     dynamicClientRegistration:
       enabled: true
+    clientIdMetadataDocuments:
+      enabled: true

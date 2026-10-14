@@ -1,0 +1,12 @@
+Neos\OAuth\Infrastructure\Http\ClientMetadataDocumentFetcher:
+  className: Neos\OAuth\Infrastructure\Http\GuzzleClientMetadataDocumentFetcher
+
+Neos\OAuth\Domain\ClientMetadataDocuments:
+  properties:
+    cache:
+      object:
+        factoryObjectName: Neos\Flow\Cache\CacheManager
+        factoryMethodName: getCache
+        arguments:
+          1:
+            value: Neos_OAuth_ClientMetadataDocuments

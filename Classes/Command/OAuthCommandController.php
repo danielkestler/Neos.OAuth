@@ -11,6 +11,7 @@ use Neos\OAuth\Domain\Model\OAuthClient;
 use Neos\OAuth\Domain\Repository\OAuthClientRepository;
 use Neos\OAuth\Domain\Repository\TokenRecordRepository;
 use Neos\OAuth\Domain\ClientDirectory;
+use Neos\OAuth\Domain\ClientMetadataDocuments;
 use Neos\OAuth\Domain\ClientRegistration;
 use Neos\OAuth\Domain\ScopeRegistry;
 use Neos\OAuth\Security\AuthorizationServerMetadata;
@@ -130,6 +131,8 @@ class OAuthCommandController extends CommandController
         } catch (\Throwable) {
             // the tables are missing, reported above
         }
+        $this->outputLine('  Dynamic client registration: %s', [$this->authorizationServer->registrationUrl() !== null ? 'enabled' : 'disabled']);
+        $this->outputLine('  Client ID metadata documents: %s', [$this->authorizationServer->clientIdMetadataDocumentsSupported() ? 'enabled' : 'disabled']);
 
         $this->outputLine();
         $this->outputLine('<b>Protected resources</b>');
@@ -225,7 +228,8 @@ class OAuthCommandController extends CommandController
     /**
      * List the registered clients
      *
-     * Shows each client's ID, type, grants, scopes and client_credentials account. Secrets are never shown.
+     * Shows each client's ID, type, grants, scopes and client_credentials account. Secrets are never shown. Clients
+     * identified by the URL of their metadata document are not stored, so they are not listed.
      */
     public function listClientsCommand(): void
     {
@@ -243,9 +247,12 @@ class OAuthCommandController extends CommandController
         }
         if ($rows === []) {
             $this->outputLine('There are no clients.');
-            return;
+        } else {
+            $this->output->outputTable($rows, ['Client ID', 'Name', 'Type', 'Grants', 'Scopes', 'Account']);
         }
-        $this->output->outputTable($rows, ['Client ID', 'Name', 'Type', 'Grants', 'Scopes', 'Account']);
+        if ($this->authorizationServer->clientIdMetadataDocumentsSupported()) {
+            $this->outputLine('Clients identified by the URL of their metadata document are not listed, they are not stored.');
+        }
     }
 
     /**
@@ -275,9 +282,11 @@ class OAuthCommandController extends CommandController
         $client = $this->clientRepository->findOneByClientIdentifier($identifier);
         if ($client === null) {
             $this->outputLine(
-                $this->clientDirectory->isDeclared($identifier)
-                    ? '<error>The client "%s" is declared in Neos.OAuth.clients</error>, remove it from the configuration.'
-                    : '<error>There is no client "%s".</error>',
+                match (true) {
+                    $this->clientDirectory->isDeclared($identifier) => '<error>The client "%s" is declared in Neos.OAuth.clients</error>, remove it from the configuration.',
+                    ClientMetadataDocuments::isUrl($identifier) => '<error>The client "%s" is identified by its metadata document and not stored</error>, revoke its tokens with ./flow oauth:revoketokens --client.',
+                    default => '<error>There is no client "%s".</error>',
+                },
                 [$identifier],
             );
             $this->quit(1);

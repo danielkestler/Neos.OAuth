@@ -1,0 +1,5 @@
+# Fetched client ID metadata documents, see Neos.OAuth.clientIdMetadataDocuments. Each entry has the lifetime the
+# document allows, so it needs no persistent backend: losing it only means fetching again
+Neos_OAuth_ClientMetadataDocuments:
+  frontend: Neos\Cache\Frontend\VariableFrontend
+  backend: Neos\Cache\Backend\FileBackend

@@ -15,6 +15,8 @@ use Neos\Flow\Security\Account;
 use Neos\Flow\Security\Authentication\AuthenticationManagerInterface;
 use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Flow\Security\Exception\AuthenticationRequiredException;
+use Neos\OAuth\Domain\ClientMetadataDocuments;
+use Neos\OAuth\Domain\InvalidClientMetadataDocument;
 use Neos\OAuth\Domain\Model\OAuthClient;
 use Neos\OAuth\Domain\ScopeRegistry;
 use Neos\OAuth\Infrastructure\League\Entity\ClientEntity;
@@ -44,6 +46,9 @@ class AuthorizeController extends ActionController
 
     #[Flow\Inject]
     protected ProtectedResources $protectedResources;
+
+    #[Flow\Inject]
+    protected ClientMetadataDocuments $clientMetadataDocuments;
 
     #[Flow\Inject]
     protected TokenRecords $tokenRecords;
@@ -97,8 +102,13 @@ class AuthorizeController extends ActionController
             return $this->errorResponse($exception);
         }
 
+        // Nobody vouches for the name in a metadata document, but the host it was fetched from is genuine
+        $clientHost = ClientMetadataDocuments::isUrl($client->getIdentifier()) ? parse_url($client->getIdentifier(), PHP_URL_HOST) : null;
+        $redirectHost = $clientHost !== null ? parse_url((string)$authorizationRequest->getRedirectUri(), PHP_URL_HOST) : null;
         $this->view->assignMultiple([
             'clientName' => $client->getName(),
+            'clientHost' => $clientHost,
+            'redirectHost' => $redirectHost !== $clientHost ? $redirectHost : null,
             'scopeGroups' => $this->scopeRegistry->group(array_map(
                 static fn ($scope) => (string)$scope->getIdentifier(),
                 $authorizationRequest->getScopes(),
@@ -153,7 +163,11 @@ class AuthorizeController extends ActionController
     private function validate(ServerRequestInterface $request): array
     {
         $authorizationServer = $this->serverFactory->getAuthorizationServer();
-        $authorizationRequest = $authorizationServer->validateAuthorizationRequest($request);
+        try {
+            $authorizationRequest = $authorizationServer->validateAuthorizationRequest($request);
+        } catch (OAuthServerException $exception) {
+            throw $this->explainMetadataDocumentProblem($exception, $request);
+        }
 
         // From here on, the redirect URI is known to belong to the client, so errors are sent there
         $client = $authorizationRequest->getClient();
@@ -176,6 +190,27 @@ class AuthorizeController extends ActionController
             throw new OAuthServerException('The requested resource is invalid, unknown, or not covered by the grant.', 0, 'invalid_target', 400, $exception->getMessage(), $redirectUri);
         }
         return [$authorizationRequest, $audience];
+    }
+
+    /**
+     * league rejects a client it cannot find, or a redirect URI the client doesn't have, as "invalid_client" without
+     * saying why. For clients identified by their metadata document, the developer needs to know what is wrong with it
+     */
+    private function explainMetadataDocumentProblem(OAuthServerException $exception, ServerRequestInterface $request): OAuthServerException
+    {
+        $clientId = $request->getQueryParams()['client_id'] ?? null;
+        if ($exception->getErrorType() !== 'invalid_client' || !is_string($clientId) || !ClientMetadataDocuments::isUrl($clientId)) {
+            return $exception;
+        }
+        try {
+            // fetched already, so this is answered from the cache
+            $client = $this->clientMetadataDocuments->find($clientId);
+            $hint = sprintf('The redirect_uri must be one of the redirect_uris in the client metadata document: %s', implode(', ', $client->getRedirectUris()));
+        } catch (InvalidClientMetadataDocument $problem) {
+            $hint = $problem->getMessage();
+        }
+        // without a verified redirect URI, the error is not redirected
+        return new OAuthServerException($exception->getMessage(), $exception->getCode(), $exception->getErrorType(), $exception->getHttpStatusCode(), $hint, null, $exception);
     }
 
     /**

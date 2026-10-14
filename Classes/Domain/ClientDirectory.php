@@ -12,7 +12,8 @@ use Neos\OAuth\Security\IssuerNotConfigured;
 use Psr\Log\LoggerInterface;
 
 /**
- * All clients: those declared in Neos.OAuth.clients and those registered in the database
+ * All clients: those declared in Neos.OAuth.clients, those registered in the database and, if enabled, those whose
+ * client ID is the URL of their metadata document (see ClientMetadataDocuments), in that order
  *
  * Declared clients are public (no secret) and need no setup: "{issuer}" in their redirect URIs is replaced with the
  * issuer of the environment
@@ -36,6 +37,7 @@ final class ClientDirectory
         private readonly ScopeRegistry $scopeRegistry,
         private readonly AuthorizationServerMetadata $authorizationServer,
         private readonly LoggerInterface $logger,
+        private readonly ClientMetadataDocuments $metadataDocuments,
     ) {
     }
 
@@ -49,7 +51,16 @@ final class ClientDirectory
                 return null;
             }
         }
-        return $this->clientRepository->findOneByClientIdentifier($identifier);
+        $client = $this->clientRepository->findOneByClientIdentifier($identifier);
+        if ($client !== null || !ClientMetadataDocuments::isUrl($identifier)) {
+            return $client;
+        }
+        try {
+            return $this->metadataDocuments->find($identifier);
+        } catch (InvalidClientMetadataDocument) {
+            // failed fetches are logged by ClientMetadataDocuments, the authorization endpoint tells the client what is wrong
+            return null;
+        }
     }
 
     public function isDeclared(string $identifier): bool

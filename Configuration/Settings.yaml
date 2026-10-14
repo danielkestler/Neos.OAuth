@@ -67,6 +67,31 @@ Neos:
     dynamicClientRegistration:
       enabled: false
 
+    # Client ID metadata documents (draft-ietf-oauth-client-id-metadata-document), preferred by MCP clients over
+    # dynamic registration: the client_id is an https URL, and the JSON document at that URL describes the client. Like
+    # registered ones, these clients are public and get no permissions of their own. The server fetches URLs anyone can
+    # name, so it is disabled by default (the Development context enables it)
+    clientIdMetadataDocuments:
+      enabled: false
+      # Documents on hosts that resolve to private, loopback or other non-public addresses are refused, to keep the
+      # server from probing internal services. Only allow them for local development
+      allowPrivateNetworks: false
+      # seconds
+      timeout: 5
+      # bytes
+      maximumSize: 65536
+      # How long a document is used before it is fetched again, in seconds: its Cache-Control max-age within these
+      # bounds, the minimum without one. Clients are looked up on every request with a token
+      cacheLifetime:
+        minimum: 300
+        maximum: 86400
+      # If an outdated document cannot be fetched for a temporary reason (network, timeout, server error), it is used
+      # for this many more seconds, so an outage of the client's website doesn't lock out its users. A definite answer,
+      # e.g. 404 or an invalid document, ends the client at once
+      gracePeriod: 86400
+      # How long a failed fetch is remembered, in seconds, and an outdated document is not fetched again
+      failureCacheLifetime: 30
+
   Flow:
     mvc:
       routes:

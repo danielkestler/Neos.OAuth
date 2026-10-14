@@ -1,0 +1,3 @@
+# Tests hand out client metadata documents without the network
+Neos\OAuth\Infrastructure\Http\ClientMetadataDocumentFetcher:
+  className: Neos\OAuth\Tests\Functional\Fixtures\FakeClientMetadataDocumentFetcher

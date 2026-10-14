@@ -32,6 +32,9 @@ final class AuthorizationServerMetadata
     #[Flow\InjectConfiguration(path: 'dynamicClientRegistration.enabled', package: 'Neos.OAuth')]
     protected bool $dynamicClientRegistration = false;
 
+    #[Flow\InjectConfiguration(path: 'clientIdMetadataDocuments.enabled', package: 'Neos.OAuth')]
+    protected bool $clientIdMetadataDocuments = false;
+
     #[Flow\InjectConfiguration(path: 'http.baseUri', package: 'Neos.Flow')]
     protected ?string $baseUri = null;
 
@@ -61,6 +64,14 @@ final class AuthorizationServerMetadata
     public function registrationUrl(): ?string
     {
         return $this->dynamicClientRegistration ? self::REGISTRATION_PATH : null;
+    }
+
+    /**
+     * Whether clients can use the URL of their metadata document as client_id (OAuth Client ID Metadata Document)
+     */
+    public function clientIdMetadataDocumentsSupported(): bool
+    {
+        return $this->clientIdMetadataDocuments;
     }
 
     /**
@@ -141,6 +152,7 @@ final class AuthorizationServerMetadata
             'grant_types_supported' => OAuthClient::SUPPORTED_GRANTS,
             'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post', 'none'],
             'code_challenge_methods_supported' => $this->codeChallengeMethods(),
-        ] + ($registrationUrl !== null ? ['registration_endpoint' => $issuer . $registrationUrl] : []);
+        ] + ($registrationUrl !== null ? ['registration_endpoint' => $issuer . $registrationUrl] : [])
+            + ($this->clientIdMetadataDocumentsSupported() ? ['client_id_metadata_document_supported' => true] : []);
     }
 }

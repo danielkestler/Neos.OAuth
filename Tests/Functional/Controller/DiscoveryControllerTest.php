@@ -23,6 +23,7 @@ class DiscoveryControllerTest extends FunctionalTestCase
         self::assertContains('neos.oauth.test', $document['scopes_supported']);
         self::assertContains('neos.oauth.provided', $document['scopes_supported']);
         self::assertSame(['S256'], $document['code_challenge_methods_supported']);
+        self::assertTrue($document['authorization_response_iss_parameter_supported']);
     }
 
     #[Test]

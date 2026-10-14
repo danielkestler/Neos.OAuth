@@ -24,6 +24,7 @@ use Neos\OAuth\Infrastructure\League\Entity\UserEntity;
 use Neos\OAuth\Infrastructure\League\LeagueResponse;
 use Neos\OAuth\Infrastructure\League\Repository\TokenRecords;
 use Neos\OAuth\Infrastructure\League\ServerFactory;
+use Neos\OAuth\Security\AuthorizationServerMetadata;
 use Neos\OAuth\Security\InvalidTarget;
 use Neos\OAuth\Security\IssuerNotConfigured;
 use Neos\OAuth\Security\ProtectedResources;
@@ -52,6 +53,9 @@ class AuthorizeController extends ActionController
 
     #[Flow\Inject]
     protected TokenRecords $tokenRecords;
+
+    #[Flow\Inject]
+    protected AuthorizationServerMetadata $authorizationServerMetadata;
 
     #[Flow\Inject]
     protected AuthenticationManagerInterface $authenticationManager;
@@ -220,9 +224,29 @@ class AuthorizeController extends ActionController
     {
         $authorizationRequest->setUser(new UserEntity($account->getAccountIdentifier()));
         $authorizationRequest->setAuthorizationApproved($approved);
-        return $this->tokenRecords->withAudience($audience, fn () => LeagueResponse::rewound(
+        return $this->withIssuer($this->tokenRecords->withAudience($audience, fn () => LeagueResponse::rewound(
             $this->serverFactory->getAuthorizationServer()->completeAuthorizationRequest($authorizationRequest, new Response())
-        ));
+        )));
+    }
+
+    /**
+     * Adds the issuer to a redirect to the client (RFC 9207), so that it can tell which server the code or error comes
+     * from, see authorization_response_iss_parameter_supported in the server metadata
+     */
+    private function withIssuer(ResponseInterface $response): ResponseInterface
+    {
+        $location = $response->getHeaderLine('Location');
+        if ($location === '') {
+            return $response;
+        }
+        try {
+            $issuer = $this->authorizationServerMetadata->issuer();
+        } catch (IssuerNotConfigured) {
+            return $response;
+        }
+        [$uri, $fragment] = explode('#', $location, 2) + [1 => null];
+        $uri .= (str_contains($uri, '?') ? '&' : '?') . http_build_query(['iss' => $issuer]);
+        return $response->withHeader('Location', $fragment !== null ? $uri . '#' . $fragment : $uri);
     }
 
     private function authenticatedAccount(): ?Account
@@ -242,7 +266,7 @@ class AuthorizeController extends ActionController
     private function errorResponse(OAuthServerException $exception): ?ResponseInterface
     {
         if ($exception->hasRedirect()) {
-            return LeagueResponse::rewound($exception->generateHttpResponse(new Response()));
+            return $this->withIssuer(LeagueResponse::rewound($exception->generateHttpResponse(new Response())));
         }
         // Without a verified redirect URI, the error must not be sent anywhere
         $this->logger->info(sprintf('Rejected OAuth authorization request: %s', $exception->getHint() ?? $exception->getMessage()), LogEnvironment::fromMethodName(__METHOD__));

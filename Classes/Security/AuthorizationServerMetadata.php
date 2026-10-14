@@ -152,6 +152,8 @@ final class AuthorizationServerMetadata
             'grant_types_supported' => OAuthClient::SUPPORTED_GRANTS,
             'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post', 'none'],
             'code_challenge_methods_supported' => $this->codeChallengeMethods(),
+            // the authorization endpoint adds iss to its redirects (RFC 9207)
+            'authorization_response_iss_parameter_supported' => true,
         ] + ($registrationUrl !== null ? ['registration_endpoint' => $issuer . $registrationUrl] : [])
             + ($this->clientIdMetadataDocumentsSupported() ? ['client_id_metadata_document_supported' => true] : []);
     }

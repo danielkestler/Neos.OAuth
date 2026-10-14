@@ -9,20 +9,37 @@
             <h1 class="neos-login-heading">Authorize <strong>{clientName}</strong></h1>
             <div class="neos-login-body neos">
                 <p><strong>{clientName}</strong> wants to access Neos as <strong>{accountIdentifier}</strong>.</p>
-                <f:if condition="{scopes}">
-                    <ul>
-                        <f:for each="{scopes}" as="scope">
-                            <li>{scope.description}<br><code>{scope.identifier}</code></li>
-                        </f:for>
-                    </ul>
-                </f:if>
                 <f:form action="decide" method="post">
                     <f:form.hidden name="authorizationQuery" value="{authorizationQuery}" />
+                    <f:if condition="{scopes}">
+                        <ul>
+                            <f:for each="{scopes}" as="scope">
+                                <li>
+                                    <label>
+                                        <f:form.checkbox name="scopes" multiple="true" value="{scope.identifier}" checked="true" />
+                                        <span>{scope.description}<br><code>{scope.identifier}</code></span>
+                                    </label>
+                                </li>
+                            </f:for>
+                        </ul>
+                    </f:if>
                     <div class="neos-actions">
                         <button type="submit" name="decision" value="deny" class="neos-button">Deny</button>
                         <button type="submit" name="decision" value="approve" class="neos-button neos-login-btn">Approve</button>
                     </div>
                 </f:form>
+                <script>
+                    (function () {
+                        const checkboxes = document.querySelectorAll('input[name="scopes[]"]');
+                        const approve = document.querySelector('button[value="approve"]');
+                        if (checkboxes.length === 0) {
+                            return;
+                        }
+                        const update = () => approve.disabled = !Array.from(checkboxes).some(checkbox => checkbox.checked);
+                        checkboxes.forEach(checkbox => checkbox.addEventListener('change', update));
+                        update();
+                    })();
+                </script>
             </div>
         </f:else>
     </f:if>

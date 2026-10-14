@@ -17,8 +17,11 @@
         .neos-login-body ul { margin: 0 0 24px; padding: 0; list-style: none; border-top: 1px solid rgba(255, 255, 255, .25); }
         .neos-login-body li { padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .25); }
         .neos-login-body code { font-size: 12px; opacity: .75; }
+        .neos-login-body label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+        .neos-login-body input[type="checkbox"] { flex: none; width: 16px; height: 16px; margin: 3px 0 0; accent-color: #00b5ff; cursor: pointer; }
         .neos-login-box .neos-actions { display: flex; gap: 16px; }
         .neos-login-box .neos-actions button { flex: 1; cursor: pointer; background-color: #3f3f3f; }
+        .neos-login-box .neos-actions button:disabled { cursor: not-allowed; opacity: .65; }
     </style>
 </head>
 <body class="neos{f:if(condition: loginForm.backgroundImage, then: ' neos--bg')}">

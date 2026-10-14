@@ -98,8 +98,9 @@ class AuthorizeController extends ActionController
     /**
      * @param string $authorizationQuery the query string of the authorization request the user decided on
      * @param string $decision "approve" or anything else to deny
+     * @param array<string> $scopes the identifiers of the requested scopes the user ticked
      */
-    public function decideAction(string $authorizationQuery, string $decision): ?ResponseInterface
+    public function decideAction(string $authorizationQuery, string $decision, array $scopes = []): ?ResponseInterface
     {
         $account = $this->authenticatedAccount();
         if ($account === null) {
@@ -113,6 +114,19 @@ class AuthorizeController extends ActionController
             $authorizationRequest = $this->validate(
                 (new ServerRequest('GET', '/oauth/authorize?' . $authorizationQuery))->withQueryParams($queryParameters)
             );
+            // The user may grant fewer scopes than requested, but never others
+            $requestedScopes = $authorizationRequest->getScopes();
+            $grantedScopes = array_values(array_filter(
+                $requestedScopes,
+                fn ($scope) => in_array($scope->getIdentifier(), $scopes, true),
+            ));
+            if ($decision === 'approve' && $requestedScopes !== [] && $grantedScopes === []) {
+                // The page disables approving without a scope, so this only happens without JavaScript
+                $this->response->setStatusCode(400);
+                $this->view->assign('error', 'Select at least one permission to approve. Please start the authorization again.');
+                return null;
+            }
+            $authorizationRequest->setScopes($grantedScopes);
             return $this->complete($authorizationRequest, $account, $decision === 'approve');
         } catch (OAuthServerException $exception) {
             return $this->errorResponse($exception);

@@ -31,6 +31,14 @@ Neos:
     #  'Vendor.Package': 'Vendor\Package\Security\MyScopes'
     scopeProviders: {}
 
+    # How the consent page groups the scopes: by prefix, the part before the first dot. An icon is a single-colored SVG,
+    # it takes the color of the text
+    #  'my':
+    #    label: 'My things'
+    #    icon: 'resource://Vendor.Package/Public/Icons/my.svg'
+    #    position: 10
+    scopeGroups: {}
+
     # The resources that accept the tokens, contributed by the packages that serve them. Each one gets a metadata
     # document (RFC 9728) at /.well-known/oauth-protected-resource/<path>
     #  'Vendor.Package':

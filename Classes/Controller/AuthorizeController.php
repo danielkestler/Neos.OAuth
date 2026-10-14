@@ -88,7 +88,10 @@ class AuthorizeController extends ActionController
 
         $this->view->assignMultiple([
             'clientName' => $client->getName(),
-            'scopes' => $this->describe($authorizationRequest),
+            'scopeGroups' => $this->scopeRegistry->group(array_map(
+                static fn ($scope) => (string)$scope->getIdentifier(),
+                $authorizationRequest->getScopes(),
+            )),
             'accountIdentifier' => $account->getAccountIdentifier(),
             'authorizationQuery' => $httpRequest->getUri()->getQuery(),
         ]);
@@ -171,19 +174,6 @@ class AuthorizeController extends ActionController
             }
         }
         return null;
-    }
-
-    /**
-     * @return list<array{identifier: string, description: string}>
-     */
-    private function describe(AuthorizationRequest $authorizationRequest): array
-    {
-        $scopes = [];
-        foreach ($authorizationRequest->getScopes() as $scope) {
-            $identifier = (string)$scope->getIdentifier();
-            $scopes[] = ['identifier' => $identifier, 'description' => $this->scopeRegistry->describe($identifier)];
-        }
-        return $scopes;
     }
 
     /**

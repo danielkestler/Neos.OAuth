@@ -5,6 +5,7 @@ namespace Neos\OAuth\Domain;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
+use Neos\Utility\PositionalArraySorter;
 
 /**
  * The scopes clients can request: configured in Neos.OAuth.scopes or contributed by the Neos.OAuth.scopeProviders of
@@ -24,6 +25,12 @@ final class ScopeRegistry
      */
     #[Flow\InjectConfiguration(path: 'scopeProviders', package: 'Neos.OAuth')]
     protected array $scopeProviders = [];
+
+    /**
+     * @var array<string, array{label?: string, icon?: string, position?: int|string}|null> scope prefix => group, null removes a group
+     */
+    #[Flow\InjectConfiguration(path: 'scopeGroups', package: 'Neos.OAuth')]
+    protected array $scopeGroups = [];
 
     /**
      * @var array<string, string>|null
@@ -79,6 +86,34 @@ final class ScopeRegistry
     public function describe(string $scope): string
     {
         return $this->descriptions()[$scope] ?? $scope;
+    }
+
+    /**
+     * Groups the scopes by their prefix, the part before the first dot, as configured in Neos.OAuth.scopeGroups
+     *
+     * A prefix without a group gets one labeled with the prefix, at the end
+     *
+     * @param list<string> $scopes
+     * @return list<array{label: string, icon: string|null, scopes: list<array{identifier: string, description: string}>}>
+     */
+    public function group(array $scopes): array
+    {
+        $groups = [];
+        foreach ($scopes as $scope) {
+            $prefix = explode('.', $scope, 2)[0];
+            $configuration = $this->scopeGroups[$prefix] ?? [];
+            $groups[$prefix] ??= [
+                'label' => $configuration['label'] ?? $prefix,
+                'icon' => $configuration['icon'] ?? null,
+                'position' => $configuration['position'] ?? 'end',
+                'scopes' => [],
+            ];
+            $groups[$prefix]['scopes'][] = ['identifier' => $scope, 'description' => $this->describe($scope)];
+        }
+        return array_values(array_map(
+            static fn (array $group) => ['label' => $group['label'], 'icon' => $group['icon'], 'scopes' => $group['scopes']],
+            (new PositionalArraySorter($groups))->toArray(),
+        ));
     }
 
     /**

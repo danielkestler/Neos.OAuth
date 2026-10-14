@@ -1,46 +1,121 @@
 <f:layout name="Default" />
 
 <f:section name="Content">
-    <f:if condition="{error}">
-        <f:then>
-            <f:render partial="Error" arguments="{error: error, hint: hint}" />
-        </f:then>
-        <f:else>
-            <h1 class="neos-login-heading">Authorize <strong>{clientName}</strong></h1>
-            <div class="neos-login-body neos">
-                <p><strong>{clientName}</strong> wants to access Neos as <strong>{accountIdentifier}</strong>.</p>
-                <f:form action="decide" method="post">
-                    <f:form.hidden name="authorizationQuery" value="{authorizationQuery}" />
-                    <f:if condition="{scopes}">
-                        <ul>
-                            <f:for each="{scopes}" as="scope">
-                                <li>
-                                    <label>
-                                        <f:form.checkbox name="scopes" multiple="true" value="{scope.identifier}" checked="true" />
-                                        <span>{scope.description}<br><code>{scope.identifier}</code></span>
-                                    </label>
-                                </li>
-                            </f:for>
-                        </ul>
+  <f:if condition="{error}">
+    <f:then>
+      <f:render partial="Error" arguments="{error: error, hint: hint}" />
+    </f:then>
+    <f:else>
+      <h1 class="neos-login-heading">
+        Authorize <strong>{clientName}</strong>
+      </h1>
+      <div class="neos-login-body neos">
+        <p>
+          <strong>{clientName}</strong> wants to access Neos as
+          <strong>{accountIdentifier}</strong>.
+        </p>
+        <f:form action="decide" method="post">
+          <f:form.hidden
+            name="authorizationQuery"
+            value="{authorizationQuery}"
+          />
+          <f:if condition="{scopeGroups}">
+            <div class="scope-groups">
+              <f:for each="{scopeGroups}" as="group">
+                <div class="scope-group">
+                  <label class="scope-group-label">
+                    <input type="checkbox" class="scope-group-toggle" checked />
+                    <f:if condition="{group.icon}">
+                      <span
+                        class="scope-group-icon"
+                        style="--icon: url('{f:uri.resource(path: group.icon)}')"
+                      ></span>
                     </f:if>
-                    <div class="neos-actions">
-                        <button type="submit" name="decision" value="deny" class="neos-button">Deny</button>
-                        <button type="submit" name="decision" value="approve" class="neos-button neos-login-btn">Approve</button>
-                    </div>
-                </f:form>
-                <script>
-                    (function () {
-                        const checkboxes = document.querySelectorAll('input[name="scopes[]"]');
-                        const approve = document.querySelector('button[value="approve"]');
-                        if (checkboxes.length === 0) {
-                            return;
-                        }
-                        const update = () => approve.disabled = !Array.from(checkboxes).some(checkbox => checkbox.checked);
-                        checkboxes.forEach(checkbox => checkbox.addEventListener('change', update));
-                        update();
-                    })();
-                </script>
+                    <span>{group.label}</span>
+                  </label>
+                  <ul>
+                    <f:for each="{group.scopes}" as="scope">
+                      <li>
+                        <label title="{scope.identifier}">
+                          <f:form.checkbox
+                            name="scopes"
+                            multiple="true"
+                            value="{scope.identifier}"
+                            checked="true"
+                          />
+                          <span>{scope.description}</span>
+                        </label>
+                      </li>
+                    </f:for>
+                  </ul>
+                </div>
+              </f:for>
             </div>
-        </f:else>
-    </f:if>
+          </f:if>
+          <div class="neos-actions">
+            <button
+              type="submit"
+              name="decision"
+              value="deny"
+              class="neos-button"
+            >
+              Deny
+            </button>
+            <button
+              type="submit"
+              name="decision"
+              value="approve"
+              class="neos-button neos-login-btn"
+            >
+              Approve
+            </button>
+          </div>
+        </f:form>
+        <script>
+          ;(function () {
+            const checkboxes = document.querySelectorAll(
+              'input[name="scopes[]"]',
+            )
+            const approve = document.querySelector('button[value="approve"]')
+            if (checkboxes.length === 0) {
+              return
+            }
+            const groups = Array.from(
+              document.querySelectorAll('.scope-group'),
+            ).map((element) => ({
+              toggle: element.querySelector('.scope-group-toggle'),
+              checkboxes: Array.from(
+                element.querySelectorAll('input[name="scopes[]"]'),
+              ),
+            }))
+            const update = () => {
+              groups.forEach((group) => {
+                const checked = group.checkboxes.filter(
+                  (checkbox) => checkbox.checked,
+                ).length
+                group.toggle.checked = checked === group.checkboxes.length
+                group.toggle.indeterminate =
+                  checked > 0 && checked < group.checkboxes.length
+              })
+              approve.disabled = !Array.from(checkboxes).some(
+                (checkbox) => checkbox.checked,
+              )
+            }
+            groups.forEach((group) =>
+              group.toggle.addEventListener('change', () => {
+                group.checkboxes.forEach(
+                  (checkbox) => (checkbox.checked = group.toggle.checked),
+                )
+                update()
+              }),
+            )
+            checkboxes.forEach((checkbox) =>
+              checkbox.addEventListener('change', update),
+            )
+            update()
+          })()
+        </script>
+      </div>
+    </f:else>
+  </f:if>
 </f:section>

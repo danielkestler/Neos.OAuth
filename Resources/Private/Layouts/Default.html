@@ -12,13 +12,23 @@
         <style>body.neos--bg, .neos-login-box:before { background-image: url({f:uri.resource(path: loginForm.backgroundImage)}); }</style>
     </f:if>
     <style>
+        /* Wider than the login. It fits the viewport (minus the footer), but shows at least two scopes; its content scrolls
+           inside, so the blurred background stays */
+        .neos .neos-login-box.oauth-box { display: flex; flex-direction: column; box-sizing: border-box; width: 520px; max-width: calc(100vw - 32px); max-height: max(480px, calc(100vh - 100px)); max-height: max(480px, calc(100dvh - 100px)); padding: 0; }
+        .oauth-box-content { padding: 40px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .4) transparent; }
+        @media (max-width: 480px) { .oauth-box-content { padding: 20px; } }
         .neos-login-body { color: #fff; font-size: 14px; line-height: 1.5; }
         .neos-login-body p { margin: 0 0 16px; }
-        .neos-login-body ul { margin: 0 0 24px; padding: 0; list-style: none; border-top: 1px solid rgba(255, 255, 255, .25); }
-        .neos-login-body li { padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .25); }
+        .scope-groups { display: flex; flex-direction: column; gap: 8px; margin: 0 0 24px; }
+        .scope-group { padding: 12px 14px; background: rgba(20, 20, 20, .3); }
+        .scope-group .scope-group-label { align-items: center; font-weight: bold; }
+        .scope-group-icon { flex: none; width: 16px; height: 16px; background-color: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+        .scope-group ul { margin: 8px 0 0 28px; padding: 0; list-style: none; }
+        .scope-group li { font-size: 13px; }
         .neos-login-body code { font-size: 12px; opacity: .75; }
         .neos-login-body label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
         .neos-login-body input[type="checkbox"] { flex: none; width: 16px; height: 16px; margin: 3px 0 0; accent-color: #00b5ff; cursor: pointer; }
+        .neos-login-body .scope-group-label input[type="checkbox"] { margin: 0; }
         .neos-login-box .neos-actions { display: flex; gap: 16px; }
         .neos-login-box .neos-actions button { flex: 1; cursor: pointer; background-color: #3f3f3f; }
         .neos-login-box .neos-actions button:disabled { cursor: not-allowed; opacity: .65; }
@@ -27,13 +37,15 @@
 <body class="neos{f:if(condition: loginForm.backgroundImage, then: ' neos--bg')}">
 <div class="neos-modal-centered">
     <main class="neos-login-main">
-        <div class="neos-login-box{f:if(condition: loginForm.backgroundImage, then: ' background-image-active')}">
-            <f:if condition="{loginForm.logoImage}">
-                <figure class="neos-login-box-logo">
-                    <img class="neos-login-box-logo-resource" src="{f:uri.resource(path: loginForm.logoImage)}" width="200" height="200" alt="Neos Logo">
-                </figure>
-            </f:if>
-            <f:render section="Content" />
+        <div class="neos-login-box oauth-box{f:if(condition: loginForm.backgroundImage, then: ' background-image-active')}">
+            <div class="oauth-box-content">
+                <f:if condition="{loginForm.logoImage}">
+                    <figure class="neos-login-box-logo">
+                        <img class="neos-login-box-logo-resource" src="{f:uri.resource(path: loginForm.logoImage)}" width="200" height="200" alt="Neos Logo">
+                    </figure>
+                </f:if>
+                <f:render section="Content" />
+            </div>
         </div>
     </main>
     <f:if condition="{loginForm.backgroundImageAttribution}">

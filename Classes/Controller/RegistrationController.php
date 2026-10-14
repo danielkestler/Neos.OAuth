@@ -20,6 +20,13 @@ use Psr\Http\Message\ResponseInterface;
  */
 class RegistrationController extends ActionController
 {
+    /**
+     * They answer JSON: without this, Flow answers clients sending "Accept: application/json" with a 406
+     *
+     * @var array<string>
+     */
+    protected $supportedMediaTypes = ['application/json', 'text/html'];
+
     private const array GRANT_TYPES = [OAuthClient::GRANT_AUTHORIZATION_CODE, OAuthClient::GRANT_REFRESH_TOKEN];
 
     #[Flow\Inject]

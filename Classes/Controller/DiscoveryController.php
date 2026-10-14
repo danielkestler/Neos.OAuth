@@ -16,6 +16,13 @@ use Psr\Http\Message\ResponseInterface;
  */
 class DiscoveryController extends ActionController
 {
+    /**
+     * They answer JSON: without this, Flow answers clients sending "Accept: application/json" with a 406
+     *
+     * @var array<string>
+     */
+    protected $supportedMediaTypes = ['application/json', 'text/html'];
+
     #[Flow\Inject]
     protected AuthorizationServerMetadata $authorizationServer;
 

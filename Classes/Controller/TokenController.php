@@ -28,6 +28,13 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 class TokenController extends ActionController
 {
+    /**
+     * They answer JSON: without this, Flow answers clients sending "Accept: application/json" with a 406
+     *
+     * @var array<string>
+     */
+    protected $supportedMediaTypes = ['application/json', 'text/html'];
+
     #[Flow\Inject]
     protected ServerFactory $serverFactory;
 

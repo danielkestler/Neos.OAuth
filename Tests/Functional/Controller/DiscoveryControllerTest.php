@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Neos\OAuth\Tests\Functional\Controller;
 
+use GuzzleHttp\Psr7\ServerRequest;
 use Neos\Flow\Tests\FunctionalTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -48,5 +49,20 @@ class DiscoveryControllerTest extends FunctionalTestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame(['neos.oauth.provided'], json_decode((string)$response->getBody(), true, flags: JSON_THROW_ON_ERROR)['scopes_supported']);
+    }
+
+    /**
+     * As MCP clients like Claude Code send it: Flow's content negotiation must not answer it with a 406
+     */
+    #[Test]
+    public function theJsonEndpointsAcceptRequestsForJson(): void
+    {
+        foreach (['GET /.well-known/oauth-authorization-server' => 200, 'GET /.well-known/oauth-protected-resource/test-resource' => 200, 'POST /oauth/token' => 400, 'POST /oauth/register' => 403] as $request => $status) {
+            [$method, $path] = explode(' ', $request);
+            $response = $this->browser->sendRequest(new ServerRequest($method, 'http://localhost' . $path, ['Accept' => 'application/json']));
+
+            self::assertSame($status, $response->getStatusCode(), $request);
+            self::assertStringStartsWith('application/json', $response->getHeaderLine('Content-Type'), $request);
+        }
     }
 }

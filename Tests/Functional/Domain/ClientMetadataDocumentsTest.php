@@ -97,6 +97,25 @@ class ClientMetadataDocumentsTest extends FunctionalTestCase
         self::assertContains('neos.oauth.provided', $client->getScopes());
     }
 
+    /**
+     * As ChatGPT's document (https://chatgpt.com/oauth/client.json): it prefers private_key_jwt, but supports "none"
+     */
+    #[Test]
+    public function clientsThatAlsoSupportNoClientAuthenticationArePublicClients(): void
+    {
+        $this->fetcher->serve(self::CLIENT_ID, self::document([
+            'token_endpoint_auth_method' => 'private_key_jwt',
+            'token_endpoint_auth_methods_supported' => ['none', 'private_key_jwt'],
+            'token_endpoint_auth_signing_alg' => 'RS256',
+            'jwks_uri' => 'https://client.example.com/jwks.json',
+        ]));
+
+        $client = $this->objectManager->get(ClientDirectory::class)->find(self::CLIENT_ID);
+
+        self::assertNotNull($client);
+        self::assertFalse($client->isConfidential());
+    }
+
     #[Test]
     public function theScopeOfTheDocumentLimitsTheScopes(): void
     {
@@ -223,6 +242,7 @@ class ClientMetadataDocumentsTest extends FunctionalTestCase
         yield 'no redirect_uris' => [self::document(['redirect_uris' => []]), 'redirect_uris'];
         yield 'http redirect URI' => [self::document(['redirect_uris' => ['http://example.com/callback']]), 'Invalid redirect URI'];
         yield 'private_key_jwt' => [self::document(['token_endpoint_auth_method' => 'private_key_jwt']), 'only public clients'];
+        yield 'private_key_jwt only' => [self::document(['token_endpoint_auth_method' => 'private_key_jwt', 'token_endpoint_auth_methods_supported' => ['private_key_jwt']]), 'only public clients'];
         yield 'secret' => [self::document(['client_secret' => 'secret']), 'only public clients'];
         yield 'client_credentials' => [self::document(['grant_types' => ['authorization_code', 'client_credentials']]), 'grant_types'];
         yield 'too large' => [self::document(['padding' => str_repeat('x', 70000)]), 'larger than'];

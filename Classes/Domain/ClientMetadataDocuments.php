@@ -230,8 +230,13 @@ final class ClientMetadataDocuments
                 throw new InvalidClientMetadataDocument($exception->getMessage(), 1792100115);
             }
         }
-        if (($document['token_endpoint_auth_method'] ?? 'none') !== 'none' || array_key_exists('client_secret', $document)) {
-            throw new InvalidClientMetadataDocument('only public clients are supported: token_endpoint_auth_method must be "none" (or absent), private_key_jwt and client secrets are not supported', 1792100116);
+        // A client may prefer another method but also list "none", as ChatGPT does: it then picks "none", the only one
+        // both sides support (token_endpoint_auth_methods_supported of the server metadata)
+        $authMethods = $document['token_endpoint_auth_methods_supported'] ?? null;
+        $supportsNone = ($document['token_endpoint_auth_method'] ?? 'none') === 'none'
+            || (is_array($authMethods) && in_array('none', $authMethods, true));
+        if (!$supportsNone || array_key_exists('client_secret', $document)) {
+            throw new InvalidClientMetadataDocument('only public clients are supported: token_endpoint_auth_method must be "none" (or absent), or token_endpoint_auth_methods_supported must contain "none"; private_key_jwt and client secrets are not supported', 1792100116);
         }
         $grantTypes = $document['grant_types'] ?? self::GRANT_TYPES;
         if (!is_array($grantTypes) || !in_array(OAuthClient::GRANT_AUTHORIZATION_CODE, $grantTypes, true) || array_diff($grantTypes, self::GRANT_TYPES) !== []) {
